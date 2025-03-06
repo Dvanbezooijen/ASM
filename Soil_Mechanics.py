@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import seaborn as sns 
 
-file_path = r"PiazzaGrande\PiazzaGrande\Triaxial CID\Tx_188 CID.xls"
+file_path = r"Triaxial CID\Tx_188 CID.xls"
 df = pd.read_excel(file_path, engine="xlrd", sheet_name="Data", header=None, usecols="A:Q", skiprows=30)
 
 column_names = ['Date_and_time', 's_ax','u_[inf]','s_rad', 'e_ax', 'e_vol','kaman','temp','D_T','interval','D_u','D_H','H','D_V','V','A','R']
@@ -18,7 +18,7 @@ linear_region = range(0, 10)
 
 # Calculate the slope of the deviatoric stress vs. axial strain (this gives Young's Modulus)
 E = np.polyfit(axial_strain[linear_region], deviatoric_stress[linear_region], 1)[0]
-"""
+
 # Plot Deviatoric Stress vs. Deviatoric Strain
 plt.figure(figsize=(10, 6))
 plt.plot(axial_strain, deviatoric_stress, label='Deviatoric Stress vs. Axial Strain')
@@ -28,11 +28,11 @@ plt.title('Deviatoric Stress vs. Axial Strain')
 plt.legend()
 plt.grid(True)
 plt.show()
-"""
+
 
 # Plot Volumetric Strain vs. Deviatoric Strain
 volumetric_strain = df['e_vol']  # Replace with actual column name for volumetric strain
-"""
+
 plt.figure(figsize=(10, 6))
 plt.plot(axial_strain, volumetric_strain, label='Volumetric Strain vs. Deviatoric Strain')
 plt.xlabel('Deviatoric Strain')
@@ -41,10 +41,10 @@ plt.title('Volumetric Strain vs. Deviatoric Strain')
 plt.legend()
 plt.grid(True)
 plt.show()
-"""
+
 # Plot Pore Pressure vs. Deviatoric Strain
 pore_pressure = df['u_[inf]']  # Replace with actual column name for pore pressure
-"""
+
 plt.figure(figsize=(10, 6))
 plt.plot(axial_strain, pore_pressure, label='Pore Pressure vs. Deviatoric Strain')
 plt.xlabel('Deviatoric Strain')
@@ -53,7 +53,7 @@ plt.title('Pore Pressure vs. Deviatoric Strain')
 plt.legend()
 plt.grid(True)
 plt.show()
-"""
+
 
 # Assuming 'df' is your DataFrame with columns like 's ax' (deviatoric stress) and 'e vol' (volumetric strain)
 # Clean the data and filter out any unwanted NaN values
