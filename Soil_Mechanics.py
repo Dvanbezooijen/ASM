@@ -4,222 +4,159 @@ import matplotlib.pyplot as plt
 import seaborn as sns 
 from scipy.stats import linregress
 
+# File path for the triaxial test data
 file_path = r"Triaxial CID\Tx_188 CID.xls"
 
 
-########################################### CONSTANTS ################
-###### Read file
-dt = pd.read_excel(file_path, engine="xlrd", sheet_name="Data", header=None)
-# Dictionary to store the names and their corresponding values
-data_dict = {}
+################# DATA CONSTANTS ##########################
+# Read data from Excel file
+raw_data = pd.read_excel(file_path, engine="xlrd", sheet_name="Data", header=None)
 
-# Loop through rows 9 to 19 (corresponding to D10 to D20)
+# Dictionary to store extracted test parameters
+test_parameters = {}
+
+# Extract relevant parameters from the dataset
 for row in range(9, 20):
-    name_in_d = dt.iloc[row, 3]     # Column D is index 3
-    value_in_h = dt.iloc[row, 7]    # Column H is index 7
-    data_dict[name_in_d] = value_in_h #Store
+    parameter_name = raw_data.iloc[row, 3]     # Column D
+    parameter_value = raw_data.iloc[row, 7]    # Column H
+    test_parameters[parameter_name] = parameter_value
 for row in range(9, 13):
-    name_in_d = dt.iloc[row, 9]     # Column J is index 9
-    value_in_h = dt.iloc[row, 10]   # Column K is index 10
-    data_dict[name_in_d] = value_in_h #Store
+    parameter_name = raw_data.iloc[row, 9]     # Column J
+    parameter_value = raw_data.iloc[row, 10]   # Column K
+    test_parameters[parameter_name] = parameter_value
 
-dry_weight_value = float(data_dict.get("dry weight [g]:", "Not found"))         
-initial_weight_value = float(data_dict.get("initial weight [g]:", "Not found"))
-soil_unit_weight = float(data_dict.get("g [kN/m3]:","Not found"))
-dry_soil_unit_weight = float(data_dict.get("gd [kN/m3]:","Not found"))
-initial_moisture = float(data_dict.get("w0 [%]:","Not found"))/100      # Set it to decimals instead of percentages. 
-initial_void_ratio = float(data_dict.get("e0 [-]:","Not found"))
-specific_gravity = float(data_dict.get("Gs [-]:","Not found"))
+# Only Specific parameters needed
+dry_weight_grams = float(test_parameters.get("dry weight [g]:", "Not found"))
+initial_weight_grams = float(test_parameters.get("initial weight [g]:", "Not found"))
+soil_unit_weight_kN_per_m3 = float(test_parameters.get("g [kN/m3]:", "Not found"))
+dry_soil_unit_weight_kN_per_m3 = float(test_parameters.get("gd [kN/m3]:", "Not found"))
+initial_moisture_content = float(test_parameters.get("w0 [%]:", "Not found")) / 100  # Convert percentage to decimal
+initial_void_ratio = float(test_parameters.get("e0 [-]:", "Not found"))
+specific_gravity_soil = float(test_parameters.get("Gs [-]:", "Not found"))
 
-############################################### DATA
-###### Read file 
+
+################# DATA TOTAL ##########################
+###### Read file
 df = pd.read_excel(file_path, engine="xlrd", sheet_name="Data", header=None, usecols="A:Q", skiprows=30)
 
-# Give each column correct name
-column_names = ['Date_and_time', 'stress_ax','porepressure','stress_rad', 'strain_ax', 'strain_vol','kaman','temp','D_Time','interval','D_porepressure','D_Height','Height','D_Volume','Volume','Area','Radius']
+# Assign proper column names
+column_names = ['Date_and_time', 'axial_total_stress_kPa', 'pore_pressure_kPa', 'radial_total_stress_kPa', 
+                'axial_strain', 'volumetric_strain', 'kaman', 'temperature', 'D_Time', 'interval', 
+                'D_pore_pressure', 'D_Height', 'Height', 'D_Volume', 'Volume', 'Area', 'Radius']
 df.columns = column_names
-# Drop irrelevant columns
-df = df.drop(columns=['kaman', 'temp'])     # Uncertain what kaman is. Temperature not needed. 
 
-# INIT
-deviatoric_stress = df['stress_ax']         #Deviatoric stress
-axial_strain = df['strain_ax']              #Axial strain
-pore_pressure = df['porepressure']          #Porepressure
-volumetric_strain = df['strain_vol']        #Volumetric strain
-poisson_ratio = 0.3                         # Assumed with a plastiticy of 9.8% at 0.3
+# Drop unnecessary columns
+df = df.drop(columns=['kaman', 'temperature'])
 
-
-## Basic calculations:
-effective_stress = deviatoric_stress - pore_pressure  # Effective axial stress (axial stress minus pore pressure)
-
-# Calculate void ratio using unit weights
-gamma_s = specific_gravity * 9.81  
-void_ratio_unit_weight = (gamma_s / dry_soil_unit_weight) - 1           # Void ratio already given. 
+################# CSSM CALCULATIONS ##########################
+# Effective stress calculations
+df["radial_effective_stress_kPa"] = df["radial_total_stress_kPa"] - df["pore_pressure_kPa"]
+df["axial_effective_stress_kPa"] = df["axial_total_stress_kPa"] - df["pore_pressure_kPa"]
+df["mean_effective_stress_kPa"] = (df["axial_effective_stress_kPa"] + 2 * df["radial_effective_stress_kPa"]) / 3        #p' = (sigma(1) + 2*sigma(2) )/3
+df["deviatoric_stress_kPa"] = df["axial_effective_stress_kPa"] - df["radial_effective_stress_kPa"]
 
 # Calculate initial specific volume 
-specific_volume = 1 + void_ratio_unit_weight
+grain_density_kN_m3 = specific_gravity_soil * 9.81  
+void_ratio_from_unit_weight = (grain_density_kN_m3 / dry_soil_unit_weight_kN_per_m3) - 1           # Void ratio already given. 
+initial_specific_volume = 1 + void_ratio_from_unit_weight
 
-# Calculate initial Effective Stress (p'0)
-initial_effective_stress = deviatoric_stress[0] - pore_pressure[0]      
+# Calculate initial effective stress (p'0)
+initial_effective_stress_kPa = df["mean_effective_stress_kPa"].iloc[0]      
 
-# Calculate Overconsolidation Ratio
-OCR = deviatoric_stress[0]/initial_effective_stress             # denk niet dat dit klopt.... 
-
-
-# Calculate mean effective stress (p')
-df["stress_rad_effective"] = df["stress_rad"] - df["porepressure"]
-df["stress_ax_effective"] = df["stress_ax"] - df["porepressure"]
-df["p_mean"] = (df["stress_ax_effective"] + 2 * df["stress_rad_effective"]) / 3
-
-# Deviatoric stress
-df["deviatoric_stress"] = df["stress_ax_effective"] - df["stress_rad_effective"]
+# Overconsolidation Ratio (OCR)
+overconsolidation_ratio = df["axial_total_stress_kPa"].iloc[0] / initial_effective_stress_kPa  # Needs verification
 
 # M - Critical State Line Slope (q/p')
-M = df["deviatoric_stress"].iloc[-1] / df["p_mean"].iloc[-1]  # Assuming last value is at critical state
-
+critical_state_slope_M = df["deviatoric_stress_kPa"].iloc[-1] / df["mean_effective_stress_kPa"].iloc[-1]  # Assuming last value is at critical state
 
 # Fit Normal Compression Line (NCL)
-ln_p = np.log(df["p_mean"])
-specific_volume_series = np.full(len(df["p_mean"]), specific_volume)
+log_mean_effective_stress = np.log(df["mean_effective_stress_kPa"])
+specific_volume_array = df['Volume']        # np.full(len(df["mean_effective_stress_kPa"]), initial_specific_volume)
 
+slope_lambda, intercept_gamma, _, _, _ = linregress(log_mean_effective_stress, specific_volume_array)  # λ is the slope
 
-slope, intercept, _, _, _ = linregress(ln_p, specific_volume_series)  # λ is the slope
-
-λ = slope
-Γ = intercept  # Extrapolated specific volume at p' = 1 kPa
 
 # Display Results
-print(f"Critical State Parameter M: {M:.3f}")
-print(f"Lambda (λ): {λ:.3f}")
-print(f"Gamma (Γ): {Γ:.3f}")
+print(f"Initial Effective Stress (p'0): {initial_effective_stress_kPa:.3f} kPa")
+print(f"Initial Specific Volume (v0): {initial_specific_volume:.3f}")
+print(f"Critical State Parameter M: {critical_state_slope_M:.3f}")
+print(f"Lambda (λ): {slope_lambda:.3f}")
+print(f"Gamma (Γ): {intercept_gamma:.3f}")
+print(f"Overconsolidation Ratio (OCR): {overconsolidation_ratio:.3f}")
 
-# Plot q vs p' (CSL)
-plt.figure(figsize=(6, 4))
-plt.plot(df["p_mean"], df["deviatoric_stress"], 'bo-', label="Stress Path")
-plt.xlabel("Mean Effective Stress, p' (kPa)")
-plt.ylabel("Deviatoric Stress, q (kPa)")
-plt.title("Critical State Line (CSL)")
-plt.legend()
-plt.grid()
-plt.show()
 
-# Find the linear portion of the curve (e.g., first 10 points)
+################# Young's Modulus Calculations ##########################
+# Find the linear portion of the curve (first 10 points)
 linear_region = range(0, 10)
+poisson_ratio = 0.3  # Assumed based on plasticity of 9.8%
 
-# Calculate the slope of the deviatoric stress vs. axial strain (this gives Young's Modulus)
-Youngs = np.polyfit(axial_strain[linear_region], deviatoric_stress[linear_region], 1)[0]             # Young's Modulus
-Youngs_effective = np.polyfit(axial_strain[linear_region], effective_stress[linear_region], 1)[0]    # Effective Young's Modulus
-Shear_Strength = Youngs / (2 * (1 + poisson_ratio))                                                  # Shear modulus formula
+#Young’s modulus: Axial Total Stress vs. Axial Strain
+Youngs = np.polyfit(df["axial_strain"][linear_region], df["axial_total_stress_kPa"][linear_region], 1)[0] / 1e3  # Convert kPa to MPa
 
-# Print calculated results
-print(f"Total Young's Modulus (E): {Youngs} Pa")
-print(f"Effective Young's Modulus (E'): {Youngs_effective} Pa")
-print(f"Shear Stiffness (G): {Shear_Strength} Pa")
+# Effective Young’s modulus: Axial Effective Stress vs. Axial Strain
+Youngs_effective = np.polyfit(df["axial_strain"][linear_region], df["axial_effective_stress_kPa"][linear_region], 1)[0] / 1e3  # Convert kPa to MPa
+
+# Shear Stiffness (G) from Young's modulus
+Shear_Stiffness = Youngs / (2 * (1 + poisson_ratio))
+
+# Print results
+print(f"Total Young's Modulus (E): {Youngs:.3f} MPa")
+print(f"Effective Young's Modulus (E'): {Youngs_effective:.3f} MPa")
+print(f"Shear Stiffness (G): {Shear_Stiffness:.3f} MPa")
 
 
-"""
-# Fit a linear regression for e vs p' (Critical State Line)
-lambda_slope, intercept = np.polyfit(effective_stress, void_ratio, 1)
+################# Plotting ##########################
+# Plot subplots
+fig, axes = plt.subplots(2, 2, figsize=(12, 10))
 
-# Fit a linear regression for q vs p' (Critical State Line)
-M_slope, intercept = np.polyfit(effective_stress, deviatoric_stress, 1)
+# Deviatoric Stress vs. Axial Strain
+sns.lineplot(x=df["axial_strain"], y=df["deviatoric_stress_kPa"], ax=axes[0, 0])
+axes[0, 0].set_title("Deviatoric Stress vs. Axial Strain")
+axes[0, 0].set_xlabel("Axial Strain [-]")
+axes[0, 0].set_ylabel("Deviatoric Stress [kPa]")
 
-# Assuming friction angle (phi) for N (if not directly available)
-phi = 30  # degrees
-N = np.tan(np.radians(phi))  # N based on friction angle
+# Volumetric Strain vs. Deviatoric Strain
+sns.lineplot(x=df["deviatoric_stress_kPa"], y=df["volumetric_strain"], ax=axes[0, 1])
+axes[0, 1].set_title("Volumetric Strain vs. Deviatoric Stress")
+axes[0, 1].set_xlabel("Deviatoric Stress [kPa]")
+axes[0, 1].set_ylabel("Volumetric Strain [-]")
 
-# Output the results
-print(f"Lambda (λ): {lambda_slope}")
-print(f"M: {M_slope}")
-print(f"N: {N}")
+# Pore Pressure vs. Deviatoric Strain
+sns.lineplot(x=df["deviatoric_stress_kPa"], y=df["pore_pressure_kPa"], ax=axes[1, 0])
+axes[1, 0].set_title("Pore Pressure vs. Deviatoric Stress")
+axes[1, 0].set_xlabel("Deviatoric Stress [kPa]")
+axes[1, 0].set_ylabel("Pore Pressure [kPa]")
 
-# Plot the CSL in e-p' and q-p' space
-plt.figure(figsize=(12, 6))
-
-# Plot e vs p'
-plt.subplot(1, 2, 1)
-plt.plot(effective_stress, void_ratio, 'o', label='Data')
-plt.plot(effective_stress, np.polyval([lambda_slope, intercept], effective_stress), label=f"Fit: λ={lambda_slope:.3f}")
-plt.xlabel('Effective Stress (p\')')
-plt.ylabel('Void Ratio (e)')
-plt.title('Void Ratio vs Effective Stress')
-plt.legend()
-
-# Plot q vs p'
-plt.subplot(1, 2, 2)
-plt.plot(effective_stress, deviatoric_stress, 'o', label='Data')
-plt.plot(effective_stress, np.polyval([M_slope, intercept], effective_stress), label=f"Fit: M={M_slope:.3f}")
-plt.xlabel('Effective Stress (p\')')
-plt.ylabel('Deviatoric Stress (q)')
-plt.title('Deviatoric Stress vs Effective Stress')
-plt.legend()
+# CSSM Plot (Mean Effective Stress vs. Specific Volume)
+sns.lineplot(x=df["mean_effective_stress_kPa"], y=specific_volume_array, ax=axes[1, 1])
+axes[1, 1].set_title("CSSM Plot")
+axes[1, 1].set_xlabel("Mean Effective Stress [kPa]")
+axes[1, 1].set_ylabel("Specific Volume [-]")
 
 plt.tight_layout()
 plt.show()
 
-"""
-"""
-# Plot Deviatoric Stress vs. Deviatoric Strain
-plt.figure(figsize=(10, 6))
-plt.plot(axial_strain, deviatoric_stress, label='Deviatoric Stress vs. Axial Strain')
-plt.xlabel('Axial Strain')
-plt.ylabel('Deviatoric Stress [kPa]')
-plt.title('Deviatoric Stress vs. Axial Strain')
-plt.legend()
-plt.grid(True)
+
+# Plotting CSSM
+fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+
+# 1. v vs. log(p')
+sns.lineplot(x=log_mean_effective_stress, y=specific_volume_array, ax=axes[0])
+axes[0].set_title("v vs. log(p')")
+axes[0].set_xlabel("log(p') [kPa]")
+axes[0].set_ylabel("Specific Volume [-]")
+
+# 2. v vs. p'
+sns.lineplot(x=df["mean_effective_stress_kPa"], y=specific_volume_array, ax=axes[1])
+axes[1].set_title("v vs. p'")
+axes[1].set_xlabel("p' [kPa]")
+axes[1].set_ylabel("Specific Volume [-]")
+
+# 3. q vs. p'
+sns.lineplot(x=df["mean_effective_stress_kPa"], y=df["deviatoric_stress_kPa"], ax=axes[2])
+axes[2].set_title("q vs. p'")
+axes[2].set_xlabel("p' [kPa]")
+axes[2].set_ylabel("Deviatoric Stress [kPa]")
+
+plt.tight_layout()
 plt.show()
-
-
-# Plot Volumetric Strain vs. Deviatoric Strain
-plt.figure(figsize=(10, 6))
-plt.plot(axial_strain, volumetric_strain, label='Volumetric Strain vs. Deviatoric Strain')
-plt.xlabel('Deviatoric Strain')
-plt.ylabel('Volumetric Strain [%]')
-plt.title('Volumetric Strain vs. Deviatoric Strain')
-plt.legend()
-plt.grid(True)
-plt.show()
-
-# Plot Pore Pressure vs. Deviatoric Strain
-plt.figure(figsize=(10, 6))
-plt.plot(axial_strain, pore_pressure, label='Pore Pressure vs. Deviatoric Strain')
-plt.xlabel('Deviatoric Strain')
-plt.ylabel('Pore Pressure [kPa]')
-plt.title('Pore Pressure vs. Deviatoric Strain')
-plt.legend()
-plt.grid(True)
-plt.show()
-
-
-# Assuming 'df' is your DataFrame with columns like 's ax' (deviatoric stress) and 'e vol' (volumetric strain)
-# Clean the data and filter out any unwanted NaN values
-df.dropna(subset=['s_ax', 'e_vol'], inplace=True)
-
-# Consolidation phase: In this example, we assume the consolidation phase occurs before deviatoric stress is applied.
-# You may need to filter the data for the consolidation phase manually based on your dataset.
-
-# Example: Consolidation phase (assuming it starts before 5 kPa deviatoric stress)
-consolidation_data = df[df['s_ax'] < 5]
-
-# Example: Shear phase (where deviatoric stress exceeds a threshold, like 5 kPa)
-shear_data = df[df['s_ax'] >= 5]
-
-# Plotting Consolidation and Shear Paths
-plt.figure(figsize=(12, 8))
-
-# Plot consolidation path (deviatoric stress vs. volumetric strain)
-plt.plot(consolidation_data['e_vol'], consolidation_data['s_ax'], label="Consolidation Path", color='blue', marker='o')
-
-# Plot shear path (deviatoric stress vs. volumetric strain)
-plt.plot(shear_data['e_vol'], shear_data['s_ax'], label="Shear Path", color='red', marker='x')
-
-# Adding labels and title
-plt.xlabel('Volumetric Strain [%]')
-plt.ylabel('Deviatoric Stress [kPa]')
-plt.title('CSSM Path: Consolidation and Shear Stages')
-plt.legend()
-plt.grid(True)
-
-# Display the plot
-plt.show()
-"""
