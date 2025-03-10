@@ -5,7 +5,7 @@ import seaborn as sns
 from scipy.stats import linregress
 
 # File path for the triaxial test data
-file_path = r"Triaxial CID\Tx_188 CID.xls"
+file_path = r"Triaxial CID\Tx_191 CID.xls"
 
 
 ################# DATA CONSTANTS ##########################
