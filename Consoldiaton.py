@@ -63,19 +63,6 @@ df["log_mean_effective_stress"] = np.log10(df["mean_effective_stress_kPa"])
 #calculate void ratio
 df["e"] = test_parameters['e_0'] - ((df['volumetric_strain']/100)/(1+test_parameters['e_0']))
 
-# Scatter plot of void ratio vs mean effective stress
-plt.figure(figsize=(8, 6))
-sns.scatterplot(x= df["log_mean_effective_stress"], y=df["e"], color='b', edgecolor='k', alpha=0.7)
-
-# Add labels and title
-plt.xlabel('Log of Mean Effective Stress (log10 kPa)')
-plt.ylabel('Void Ratio (e)')
-plt.title('Void Ratio vs Log of Mean Effective Stress')
-
-# Show grid and plot
-plt.grid(True)
-plt.show()
-
 #%% 2. FIT LAMBDA
 
 #Select the range wihtin which the data show a linear relationship between void ration and effective stress
