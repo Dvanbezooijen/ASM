@@ -30,29 +30,26 @@ undrained_tests = ['0193','0194','0195']
 undrained_start_row = [9,9,9]
 undrained_value_column = [6,6,6]
 undrained_skiprow = [30,30,30]
-
+  
 #prepare to store data
 q_fs = {}
 p_fs = {}
 G0s = {}
 G2s = {}
-G50s ={}
-V0s = {}
 v_fs = {}
 lambdas = {}
 kappas = {}
+test_parameters = {}
 
 #%% RUN DATA ANALYSIS TRIAXIAL TESTS (REQUIRES INPUT USER)
 for i,test in enumerate(drained_tests):
-    G0_modulus,G2_modulus,G50_modulus,q_f,p_f,V0,v_f = Shearing_phase_CID(
+    G0_modulus,G2_modulus,q_f,p_f,parameters = Shearing_phase_CID(
         test, drained_start_row[i], drained_value_column[i], drained_skiprow[i])
     q_fs[test] = float(q_f)
     p_fs[test] = float(p_f)
     G0s[test] = float(G0_modulus)
     G2s[test] = float(G2_modulus)
-    G50s[test] = float(G50_modulus)
-    V0s[test] = float(V0)
-    v_fs[test] = v_f
+    test_parameters[test] = parameters
     
     #Consolidation phase
     lambd,kappa = consoldiation_phase(
@@ -61,15 +58,13 @@ for i,test in enumerate(drained_tests):
     kappas[test] = float(kappa)
     
 for i,test in enumerate(undrained_tests):
-    G0_modulus,G2_modulus,G50_modulus,q_f,p_f,V0,v_f = Shearing_phase_CIU(
+    G0_modulus,G2_modulus,q_f,p_f,parameters = Shearing_phase_CIU(
         test, undrained_start_row[i], undrained_value_column[i], undrained_skiprow[i])
     q_fs[test] = float(q_f)
     p_fs[test] = float(p_f)
     G0s[test] = float(G0_modulus)
     G2s[test] = float(G2_modulus)
-    G50s[test] = float(G50_modulus)
-    V0s[test] = float(V0)
-    v_fs[test] = v_f
+    test_parameters[test] = parameters
 
 #%% Compute M
 # Extract values from dictionaries and convert to lists
@@ -98,4 +93,17 @@ plt.ylabel('q_f (Deviatoric Stress)')
 plt.title('Stress envelope of triaxial tests')
 plt.grid(True)
 plt.show()
-    
+
+kappa_values = list(kappas.values())
+lambda_values = list(lambdas.values())
+
+print(np.mean(kappa_values))
+print(np.mean(lambda_values))
+
+#%% Compute V0
+tests = drained_tests + undrained_tests
+
+V0s = []
+for test in tests:
+    V0s.append(V0)
+
