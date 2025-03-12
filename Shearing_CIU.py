@@ -4,11 +4,23 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import seaborn as sns 
 
+"""
+FUNCTION: The following python script achieves the following:
+    - Read data from consolidated drained triaxial tests
+    - calculates deviatorics stress, strain and mean stress
+    - plots stress-strain curve and ask user for input on where soil is deemed 'failed'
+    - Calculate stifnesses G0, G2, G50
+    - Plot volumetric strain vs deviatoric strain
+    - Plot deviatoric strain vs pore water pressure
+    
+Only difference with script for CID test is that delta pore water pressure is substracted from mean stress
 
-def Shearing_drained(triaxial_test, start_row, value_column, skiprow):
+"""
+
+def Shearing_phase_CIU(triaxial_test, start_row, value_column, skiprow):
     #%% LOAD DATA
     # File path for the triaxial test data
-    file_path = f"Triaxial CID\Tx_{triaxial_test} CID.xls"
+    file_path = f"Triaxial CIU\Tx_{triaxial_test}_Mod_CIU.xls"
     
     # Read data from triaxial test
     raw_data = pd.read_excel(file_path, engine="xlrd", sheet_name="Data", header=None)
@@ -48,7 +60,7 @@ def Shearing_drained(triaxial_test, start_row, value_column, skiprow):
     
     # Calculate deviatoric strain and mean effective stress
     df['deviatoric_strain'] = (2/3) * (df["axial_strain"] - (df["volumetric_strain"] / 2))
-    df["mean_effective_stress_kPa"] = (df["axial_effective_stress_kPa"] + 2 * df["radial_effective_stress_kPa"]) / 3
+    df["mean_effective_stress_kPa"] = ((df["axial_effective_stress_kPa"] + 2 * df["radial_effective_stress_kPa"]) / 3) - df["D_pore_pressure"]
     #%% PLOT STRESS STRAIN AND ASK FOR INPUT USER
     
     # Plot the stress-strain curve
@@ -151,7 +163,7 @@ def Shearing_drained(triaxial_test, start_row, value_column, skiprow):
     #Retrieve deviatoric stress and mean stress at which sample fails
     q_f = q_secant
     p_f = df['mean_effective_stress_kPa'][idx_secant]
-    
+    v_f = df['Volume'][idx_secant]
     #%% PLOT VOLUMETRIC STRAIN vs DEVIATORIC STRAIN
     
     # Plot the scatter plot
@@ -181,6 +193,6 @@ def Shearing_drained(triaxial_test, start_row, value_column, skiprow):
     # Show grid and plot
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.show()
-    
+
     #%% RETURN RELEVANT VALUES
-    return(G0_modulus,G2_modulus,G50_modulus,q_f,p_f)
+    return(G0_modulus,G2_modulus,G50_modulus,q_f,p_f,test_parameters['V_0'],v_f)

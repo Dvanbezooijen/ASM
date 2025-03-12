@@ -4,8 +4,19 @@ import numpy as np
 import matplotlib.pyplot as plt 
 import seaborn as sns 
 
+"""
+FUNCTION: The following python script achieves the following:
+    - Read data from consolidated drained triaxial tests
+    - calculates deviatorics stress, strain and mean stress
+    - plots stress-strain curve and ask user for input on where soil is deemed 'failed'
+    - Calculate stifnesses G0, G2, G50 
+    - Plot volumetric strain vs deviatoric strain (not shown)
+    - Plot deviatoric strain vs pore water pressure (not shown)
 
-def Shearing_drained(triaxial_test, start_row, value_column, skiprow):
+Only difference with script for CID test is that delta pore water pressure is NOT substracted from mean stress
+"""
+
+def Shearing_phase_CID(triaxial_test, start_row, value_column, skiprow):
     #%% LOAD DATA
     # File path for the triaxial test data
     file_path = f"Triaxial CID\Tx_{triaxial_test} CID.xls"
@@ -151,6 +162,7 @@ def Shearing_drained(triaxial_test, start_row, value_column, skiprow):
     #Retrieve deviatoric stress and mean stress at which sample fails
     q_f = q_secant
     p_f = df['mean_effective_stress_kPa'][idx_secant]
+    v_f = df['Volume'][idx_secant]
     
     #%% PLOT VOLUMETRIC STRAIN vs DEVIATORIC STRAIN
     
@@ -165,7 +177,6 @@ def Shearing_drained(triaxial_test, start_row, value_column, skiprow):
     
     # Show plot
     plt.grid(True, linestyle="--", alpha=0.6)
-    plt.show()
     
     #%% PLOT PORE PRESSURE vs DEVIATORIC STRAIN 
     
@@ -180,7 +191,6 @@ def Shearing_drained(triaxial_test, start_row, value_column, skiprow):
     
     # Show grid and plot
     plt.grid(True, linestyle="--", alpha=0.6)
-    plt.show()
-    
+
     #%% RETURN RELEVANT VALUES
-    return(G0_modulus,G2_modulus,G50_modulus,q_f,p_f)
+    return(G0_modulus,G2_modulus,G50_modulus,q_f,p_f,test_parameters['V_0'],v_f)
