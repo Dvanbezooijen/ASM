@@ -56,7 +56,8 @@ for i,test in enumerate(drained_tests):
         test, cons_start_row[i], cons_value_column[i], cons_skiprow[i])
     lambdas[test] = float(lambd)
     kappas[test] = float(kappa)
-    
+
+ 
 for i,test in enumerate(undrained_tests):
     G0_modulus,G2_modulus,q_f,p_f,parameters = Shearing_phase_CIU(
         test, undrained_start_row[i], undrained_value_column[i], undrained_skiprow[i])
@@ -66,7 +67,6 @@ for i,test in enumerate(undrained_tests):
     G2s[test] = float(G2_modulus)
     test_parameters[test] = parameters
 
-#%% Compute M
 # Extract values from dictionaries and convert to lists
 p_f_values = list(p_fs.values())  # Mean stress values
 q_f_values = list(q_fs.values())  # Deviatoric stress values
@@ -86,24 +86,32 @@ print(f'The critical state friction angle (phi_cs) is {phi_cs:.3f} degrees')
 
 # Plotting
 plt.figure(figsize=(8, 5))
-sns.regplot(x=p_f_values, y=q_f_values, scatter_kws={"color": "b"}, line_kws={"color": "r", "linestyle": "--"})
+sns.regplot(x=p_f_values, y=q_f_values, scatter_kws={"color": "b"}, line_kws={"color": "r", "linestyle": "-"})
+
+# Add annotation for the friction angle
+plt.text(
+    x=max(p_f_values) * 0.6,  # Positioning the text around 60% of max p_f
+    y=max(q_f_values) * 0.8,  # Positioning the text around 80% of max q_f
+    s=f'ϕ_cs = {phi_cs:.2f}°',
+    fontsize=12,
+    color='red',
+    bbox=dict(facecolor='white', edgecolor='red', boxstyle='round,pad=0.3')
+)
 
 plt.xlabel('p_f (Mean Stress)')
 plt.ylabel('q_f (Deviatoric Stress)')
-plt.title('Stress envelope of triaxial tests')
+plt.title('Stress Envelope of Triaxial Tests')
+
+# Grid and show plot
 plt.grid(True)
 plt.show()
 
+# Compute mean values for kappa and lambda
 kappa_values = list(kappas.values())
 lambda_values = list(lambdas.values())
 
-print(np.mean(kappa_values))
-print(np.mean(lambda_values))
+print(f'Mean kappa: {np.mean(kappa_values):.3f}')
+print(f'Mean lambda: {np.mean(lambda_values):.3f}')
 
-#%% Compute V0
-tests = drained_tests + undrained_tests
 
-V0s = []
-for test in tests:
-    V0s.append(V0)
 

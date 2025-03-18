@@ -146,9 +146,17 @@ def Shearing_phase_CIU(triaxial_test, start_row, value_column, skiprow):
     # Show plot
     plt.show()
     
-    #Retrieve deviatoric stress and mean stress at which sample fails
-    q_f = q_secant
-    p_f = df['mean_effective_stress_kPa'][idx_secant]
+    # User input for failure deviatoric stress (q_f)
+    target_strain_f = float(input('Input deviatoric strain at point of failure: '))
+    
+    # Find the index where deviatoric stress is closest to q_f
+    idx_failure = (df['deviatoric_strain'] - target_strain_f).abs().idxmin()
+    
+    # Retrieve the corresponding mean effective stress (p_f)
+    p_f = df.loc[idx_failure, 'mean_effective_stress_kPa']
+    
+    # Retrieve the corresponding deviatoric effective stress (q_f)
+    q_f = df.loc[idx_failure, 'deviatoric_stress_kPa']
     
     #%% PLOT VOLUMETRIC STRAIN vs DEVIATORIC STRAIN
     
