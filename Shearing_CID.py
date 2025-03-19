@@ -58,13 +58,16 @@ def Shearing_phase_CID(triaxial_test, start_row, value_column, skiprow):
     df["deviatoric_stress_kPa"] = df["axial_effective_stress_kPa"] - df["radial_effective_stress_kPa"]
     
     # Calculate deviatoric strain and mean effective stress
-    df['deviatoric_strain'] = (2/3) * (df["axial_strain"] - (df["volumetric_strain"] / 2))
+    df['deviatoric_strain'] =  (df["axial_strain"] - (df["volumetric_strain"] / 3))
     df["mean_effective_stress_kPa"] = (df["axial_effective_stress_kPa"] + 2 * df["radial_effective_stress_kPa"]) / 3
-    #%% PLOT STRESS STRAIN AND ASK FOR INPUT USER
-    
+#%% PLOT STRESS STRAIN AND ASK FOR INPUT USER
+
     # Plot the stress-strain curve
     plt.figure(figsize=(8, 6))
     sns.scatterplot(x=df['deviatoric_strain'], y=df['deviatoric_stress_kPa'], color='b', alpha=0.7, label="Data Points")
+    
+    # Add ticks at every 1 unit for both axes
+    plt.xticks(np.arange(0, df['deviatoric_strain'].max() + 1, 1))  # X-axis ticks every 1 unit
     
     # Labels and title
     plt.xlabel("Deviatoric Strain (εq)")
@@ -77,9 +80,9 @@ def Shearing_phase_CID(triaxial_test, start_row, value_column, skiprow):
     # Show plot
     plt.show()
     
-    #Request input for tangent strain
-    target_strain_tangent = 0.1
-    target_strain_secant = float(input("Input the target strain at which sample is not elastic ends"))
+    # Request input for tangent strain
+    target_strain_tangent = 0.6
+    target_strain_secant = float(input("Input the target strain at which stress is maximum"))
     
     #%% COMPUTE G0
     # Function to calculate tangent modulus at a specific strain point
@@ -119,7 +122,6 @@ def Shearing_phase_CID(triaxial_test, start_row, value_column, skiprow):
     
     # Retrieve the corresponding deviatoric effective stress (q_f)
     q_f = df.loc[idx_failure, 'deviatoric_stress_kPa']
-    
     
     
     #%% PLOT STRESS STRAIN DIAGRAM WITH STIFNESSES
@@ -175,7 +177,9 @@ def Shearing_phase_CID(triaxial_test, start_row, value_column, skiprow):
     
     # Show plot
     plt.grid(True, linestyle="--", alpha=0.6)
- 
+    
+     # Close the plot without showing it
+    plt.close()
     
     #%% PLOT PORE PRESSURE vs DEVIATORIC STRAIN 
     
@@ -191,7 +195,8 @@ def Shearing_phase_CID(triaxial_test, start_row, value_column, skiprow):
     # Show grid and plot
     plt.grid(True, linestyle="--", alpha=0.6)
     
-    
+     # Close the plot without showing it
+    plt.close()
 
     #%% RETURN RELEVANT VALUES
     return(G0_modulus,G2_modulus,q_f,p_f,test_parameters)
