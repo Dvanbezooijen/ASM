@@ -59,13 +59,16 @@ def Shearing_phase_CIU(triaxial_test, start_row, value_column, skiprow):
     df["deviatoric_stress_kPa"] = df["axial_effective_stress_kPa"] - df["radial_effective_stress_kPa"]
     
     # Calculate deviatoric strain and mean effective stress
-    df['deviatoric_strain'] = (2/3) * (df["axial_strain"] - (df["volumetric_strain"] / 2))
-    df["mean_effective_stress_kPa"] = ((df["axial_effective_stress_kPa"] + 2 * df["radial_effective_stress_kPa"]) / 3) - df["D_pore_pressure"]
+    df['deviatoric_strain'] =  df["axial_strain"] #for underained conditions 
+    df["mean_effective_stress_kPa"] = ((df["axial_effective_stress_kPa"] + 2 * df["radial_effective_stress_kPa"]) / 3)
     #%% PLOT STRESS STRAIN AND ASK FOR INPUT USER
     
     # Plot the stress-strain curve
     plt.figure(figsize=(8, 6))
     sns.scatterplot(x=df['deviatoric_strain'], y=df['deviatoric_stress_kPa'], color='b', alpha=0.7, label="Data Points")
+    
+    # Add ticks at every 1 unit for both axes
+    plt.xticks(np.arange(0, df['deviatoric_strain'].max() + 1, 1))  # X-axis ticks every 1 unit
     
     # Labels and title
     plt.xlabel("Deviatoric Strain (εq)")
@@ -78,9 +81,9 @@ def Shearing_phase_CIU(triaxial_test, start_row, value_column, skiprow):
     # Show plot
     plt.show()
     
-    #Request input for tangent strain
-    target_strain_tangent = 0.1
-    target_strain_secant = float(input("Input the target strain at which the sample fails for G2"))
+    # Request input for tangent strain
+    target_strain_tangent = 1
+    target_strain_secant = float(input("Input the target strain at which stress is maximum"))
     
     #%% COMPUTE G0
     # Function to calculate tangent modulus at a specific strain point
@@ -109,6 +112,19 @@ def Shearing_phase_CIU(triaxial_test, start_row, value_column, skiprow):
     
 
     
+    #%% COMPUTE FAILURE POINT
+    # User input for failure deviatoric stress (q_f)
+    target_strain_f = float(input('Input deviatoric strain at point of failure: '))
+    
+    # Find the index where deviatoric stress is closest to q_f
+    idx_failure = (df['deviatoric_strain'] - target_strain_f).abs().idxmin()
+    
+    # Retrieve the corresponding mean effective stress (p_f)
+    p_f = df.loc[idx_failure, 'mean_effective_stress_kPa']
+    
+    # Retrieve the corresponding deviatoric effective stress (q_f)
+    q_f = df.loc[idx_failure, 'deviatoric_stress_kPa']
+    
     #%% PLOT STRESS STRAIN DIAGRAM WITH STIFNESSES
     
     # Find the max strain and stress in the dataset
@@ -130,6 +146,9 @@ def Shearing_phase_CIU(triaxial_test, start_row, value_column, skiprow):
     y_secant_extended = G2_modulus * x_range
     plt.plot(x_range, y_secant_extended, 'g--', label=f'G2 Secant: Slope = {G2_modulus:.2f} kPa')
     
+    # Plot failure point
+    plt.scatter(df.loc[idx_failure, 'deviatoric_strain'], q_f, color='red', s=100, marker='o', label='Failure Point')
+    
     # Set the x and y limits
     plt.xlim(0, strain_max)
     plt.ylim(0, q_max)
@@ -146,10 +165,6 @@ def Shearing_phase_CIU(triaxial_test, start_row, value_column, skiprow):
     # Show plot
     plt.show()
     
-    #Retrieve deviatoric stress and mean stress at which sample fails
-    q_f = q_secant
-    p_f = df['mean_effective_stress_kPa'][idx_secant]
-    
     #%% PLOT VOLUMETRIC STRAIN vs DEVIATORIC STRAIN
     
     # Plot the scatter plot
@@ -163,7 +178,7 @@ def Shearing_phase_CIU(triaxial_test, start_row, value_column, skiprow):
     
     # Show plot
     plt.grid(True, linestyle="--", alpha=0.6)
-    plt.show()
+ 
     
     #%% PLOT PORE PRESSURE vs DEVIATORIC STRAIN 
     
@@ -178,7 +193,6 @@ def Shearing_phase_CIU(triaxial_test, start_row, value_column, skiprow):
     
     # Show grid and plot
     plt.grid(True, linestyle="--", alpha=0.6)
-    plt.show()
 
     #%% RETURN RELEVANT VALUES
     return(G0_modulus,G2_modulus,q_f,p_f,test_parameters)
