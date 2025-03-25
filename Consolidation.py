@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt 
 from scipy.stats import linregress
 
+
+
 # Function for the consolidation phase
 def consolidation_phase(test, start_row, value_column, skip_row):
 
