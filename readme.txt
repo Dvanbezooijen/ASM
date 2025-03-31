@@ -1,4 +1,4 @@
 Authors:
-Simon Beuse
+Simon Beusen
 Dylan van Bezooijen
 

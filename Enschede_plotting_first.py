@@ -9,6 +9,8 @@ from Enschede_read_data import enschede_read_data
 list_of_names = ["1_180N", "2_450N", "4_990N", "5_1260N", "6_720N", "8_810N", "9D_180N", "10D_720N", "11D_1260N"]
 all_df = enschede_read_data(list_of_names)
 
+size_shear_stress = 0.0036 #m^2
+
 # Create the figure and subplots
 fig, axs = plt.subplots(1, 2, figsize=(14, 6))
 
@@ -33,7 +35,7 @@ applied_stress_values = []
 for name in list_of_names[:6]:
     df = all_df[name]
     stress, _ = find_stabilization_point(df)
-    applied_stress = int(name.split('_')[1].replace('N', ''))  
+    applied_stress = (int(name.split('_')[1].replace('N', ''))/size_shear_stress)/100  #making it kPa
     stress_values.append(stress)
     applied_stress_values.append(applied_stress)
 
