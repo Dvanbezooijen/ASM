@@ -60,8 +60,13 @@ def Shearing_phase_CID(triaxial_test, start_row, value_column, skiprow):
     # Calculate deviatoric strain and mean effective stress
     df['deviatoric_strain'] =  (df["axial_strain"] - (df["volumetric_strain"] / 3))
     df["mean_effective_stress_kPa"] = (df["axial_effective_stress_kPa"] + 2 * df["radial_effective_stress_kPa"]) / 3
+    
+    #%% COMPUTE POISSON RATIO
+    df['radial_strain'] = df["axial_strain"] - df['deviatoric_strain'] 
+    df['poisson_ratio'] = df['radial_strain']/df['axial_strain']
+    poisson_ratio = sum(df[1:]['poisson_ratio']) / len(df[1:]['poisson_ratio'])
+    
 #%% PLOT STRESS STRAIN AND ASK FOR INPUT USER
-
     # Plot the stress-strain curve
     plt.figure(figsize=(8, 6))
     sns.scatterplot(x=df['deviatoric_strain'], y=df['deviatoric_stress_kPa'], color='b', alpha=0.7, label="Data Points")
@@ -85,6 +90,7 @@ def Shearing_phase_CID(triaxial_test, start_row, value_column, skiprow):
     target_strain_secant = float(input("Input the target strain at which stress is maximum"))
     
     #%% COMPUTE G0
+
     # Function to calculate tangent modulus at a specific strain point
     def calculate_tangent_modulus(strain, stress, target_strain):
         """Calculate the tangent modulus at a specific strain level using finite differences."""
@@ -199,4 +205,4 @@ def Shearing_phase_CID(triaxial_test, start_row, value_column, skiprow):
     plt.close()
 
     #%% RETURN RELEVANT VALUES
-    return(G0_modulus,G2_modulus,q_f,p_f,test_parameters)
+    return(G0_modulus,G2_modulus,q_f,p_f,test_parameters,poisson_ratio)
