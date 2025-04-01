@@ -153,16 +153,20 @@ friction_angle = np.degrees(np.arctan(0.1 + 0.38 * np.log10(cone_resistance / si
 # Compute modulus of elasticity
 E_s = 7 * cone_resistance
 
+# Compute undrained shear strength
+s_u = (cone_resistance - sigma_v) / 18.3
+
+# Compute relativy density
 q_c1 = cone_resistance*np.sqrt(atmospheric_pressure/sigma_v_prime)
-relative_density = np.sqrt((1/305)*(q_c1/atmospheric_pressure)
+relative_density = np.sqrt((1/305)*(q_c1/atmospheric_pressure))
 
 # Display results
-print("\nDepth (m) | Cone Resistance (kPa) | Friction Ratio (%) | Total Stress (kPa) | Pore Pressure (kPa) | Effective Stress (kPa) | Friction Angle (°) | Modulus of Elasticity (kPa)")
-print("-" * 140)
+print("\nDepth (m) | Cone Resistance (kPa) | Friction Ratio (%) | Total Stress (kPa) | Pore Pressure (kPa) | Effective Stress (kPa) | Friction Angle (°) | Modulus of Elasticity (kPa) | Undrained Shear Strength (kPa) | Relative Density")
+print("-" * 160)
 
 # Corrected for loop syntax with added columns
-for d, cr, fr, sv, u_, svp, phi, Es in zip(depth, cone_resistance, friction_ratio, sigma_v, u, sigma_v_prime, friction_angle, E_s):
-    print(f"{d:8.2f} | {cr:18.2f} | {fr:18.2f} | {sv:18.2f} | {u_:18.2f} | {svp:22.2f} | {phi:15.2f} | {Es:15.2f}")
+for d, cr, fr, sv, u_, svp, phi, Es, su, rd in zip(depth, cone_resistance, friction_ratio, sigma_v, u, sigma_v_prime, friction_angle, E_s, s_u, relative_density):
+    print(f"{d:8.2f} | {cr:18.2f} | {fr:18.2f} | {sv:18.2f} | {u_:18.2f} | {svp:22.2f} | {phi:15.2f} | {Es:15.2f} | {su:18.2f} | {rd:18.2f}")
 
 
 
