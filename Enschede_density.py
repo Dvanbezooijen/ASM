@@ -3,7 +3,7 @@ import configparser
 import numpy as np
 
 # List of sample names, excluding 3_720N
-list_of_names = ["1_180N", "2_450N", "4_990N", "5_1260N", "6_720N", "8_810N", "9D_180N", "10D_720N", "11D_1260N"]
+list_of_names = ["1_180N", "2_450N", "4_990N", "5_1260N", "6_720N", "7_630N","8_810N", "9D_180N", "10D_720N", "11D_1260N"]
 
 # Constants
 base_area_cm2 = 6 * 6  # 6x6cm

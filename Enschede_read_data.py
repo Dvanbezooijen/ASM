@@ -5,7 +5,6 @@ import os
 def enschede_read_data(list_of_names):
     # Define the base directory where the files are stored
     base_dir = "Data_Enschede"
-
     # List of file names (without extensions)
 
     # Initialize a dictionary to store the DataFrames
@@ -28,7 +27,7 @@ def enschede_read_data(list_of_names):
             horizontal_displacement = clean_float_list(config["Shearing Stage"]["Horizontal Displacement"])
             force = clean_float_list(config["Shearing Stage"]["Force"])
             vertical_displacement = clean_float_list(config["Shearing Stage"]["Vertical Displacement"])
-            stress = [(f / 3600) * 10e3  for f in force] #kPa   *10e6 for mm2 to m2 / 10e3 to go from pa to kpa
+            stress = [f / 3.6 for f in force]  # kPa
             # Create DataFrame and store in dictionary
             dataframes[name] = pd.DataFrame({
                 "Stress (kPa)": stress,
