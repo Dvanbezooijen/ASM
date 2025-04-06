@@ -12,7 +12,7 @@ import numpy as np
 #%% LOAD DATA & COMPUTE BASIC VARIABLES
 
 #use loader to load relevant data into pandas
-df_raw = load_cpt_data('C:/Users/dylan/Documents/Python/ASM/CPT/CPT000000197792.xml')
+df_raw = load_cpt_data('CPT/CPT000000197792.xml')
 
 
 #%% COMPUTE BASIC DATA AND PLOTS
@@ -56,7 +56,7 @@ plt.show()
 #%% SBT chart
 
 # Load and display the SBT chart as background
-img = plt.imread('SBTchart.png')
+img = plt.imread('CPT\SBTchart.png')
 
 # Create the scatter plot with switched axes
 fig, ax = plt.subplots()
@@ -118,6 +118,8 @@ Nk = 18.3
 #undrained shear strength
 df['Undrained shear strength (kPa)'] = (df['Cone Resistance (qc, kPa)'] - df['Effective_vertical_stress (kPa)']/
                                         Nk)
+
+
 
 
 

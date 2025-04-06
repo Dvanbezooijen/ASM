@@ -5,6 +5,7 @@ import pandas as pd
 from Enschede_read_data import enschede_read_data
 import os
 import configparser
+from scipy.signal import savgol_filter
 
 # List of names for the DataFrames
 list_of_names = ["1_180N", "2_450N", "4_990N", "5_1260N", "6_720N", "7_630N", "8_810N", "9D_180N", "10D_720N", "11D_1260N"]
@@ -19,8 +20,8 @@ effective_normal_stress_N = {
     "10D_720N": 720, "11D_1260N": 1260
 }
 yield_points = {
-    "1_180N": 6.3, "2_450N": 9.8, "4_990N": 10, "5_1260N": 8.4,
-    "6_720N": 8.5, "7_630N": 7.5, "8_810N": 8.1, "9D_180N": 10.6,
+    "1_180N": 7.3, "2_450N": 9.8, "4_990N": 10, "5_1260N": 8.4,
+    "6_720N": 8.5, "7_630N": 8.1, "8_810N": 10, "9D_180N": 11,
     "10D_720N": 12.5, "11D_1260N": 12
 }
 
@@ -140,41 +141,8 @@ plt.tight_layout()
 plt.show()
 
 # ####################################################### isotropic hardening modulus values
-hardening_modulus_values = []
 
-# Loop through datasets to calculate isotropic hardening modulus using yield points
-for name, df in all_df.items():
-    if name in yield_points:
-        yield_shear_strain = yield_points[name] / 100  # Convert from percentage to decimal
-        
-        # Extract the post-yield data (shear strain > yield strain)
-        post_yield_data = df[df["Shear Strain"] > yield_shear_strain]
-        
-        # Perform linear regression (stress vs. shear strain) in the post-yield region
-        if len(post_yield_data) > 1:  # Ensure there is enough data for regression
-            slope, intercept, r_value, p_value, std_err = linregress(post_yield_data["Shear Strain"], post_yield_data["Stress (kPa)"])
-            print(f"Test {name}: Isotropic Hardening Modulus = {slope:.2f} kPa")
-            hardening_modulus_values.append(slope)
-        else:
-            print(f"Test {name}: Not enough post-yield data for regression.")
-            hardening_modulus_values.append(np.nan)  # Append NaN if there's not enough data
-            
-average_hardening_modulus = np.nanmean(hardening_modulus_values)
-print(f"Average Isotropic Hardening Modulus: {average_hardening_modulus:.2f} kPa")
-# Plotting Isotropic Hardening Modulus for all tests
-plt.figure(figsize=(8, 6))
 test_names = list(yield_points.keys())
-
-plt.bar(test_names, hardening_modulus_values, color='lightblue')
-plt.xlabel("Test Name")
-plt.ylabel("Isotropic Hardening Modulus (kPa)")
-plt.title("Isotropic Hardening Modulus for Different Tests")
-plt.xticks(rotation=45, ha="right")
-plt.grid(True, axis='y')
-plt.tight_layout()
-plt.show()
-
-
 
 ######################  maximum plastic volumetric strain values
 max_volumetric_strain_values = []
@@ -282,3 +250,44 @@ plt.xticks(rotation=45, ha="right")
 plt.grid(True, axis='y')
 plt.tight_layout()
 plt.show()
+
+
+
+# Dictionary to store cohesion values
+cohesion_values = {}
+for test_name, df in all_df.items():
+    if test_name not in yield_points:
+        continue
+    
+    # Extract relevant data
+    yield_point = yield_points[test_name]
+    normal_stress = effective_normal_stress_kPa[test_name]
+    
+    # Ensure column names are correct
+    if "Shear Strain" not in df.columns or "Stress (kPa)" not in df.columns:
+        print(f"Missing required columns in test: {test_name}")
+        continue
+
+    # Post-yield data for dilation and hardening
+    post_yield_data = df[df["Shear Strain"] > yield_point]
+    
+    # Ensure we have enough data
+    if len(post_yield_data) > 7:
+        post_yield_data["Smoothed Stress (kPa)"] = savgol_filter(post_yield_data["Stress (kPa)"], window_length=7, polyorder=3)
+
+        # Mohr-Coulomb Failure Criterion: τ = c' + σ' * tan(φ')
+        shear_stress = post_yield_data["Stress (kPa)"] / 2  # Approximate τ as q/2
+        effective_stress = np.array([normal_stress] * len(shear_stress))  # σ'
+        
+        # Perform linear regression: y = mx + b -> τ = tan(φ') * σ' + c'
+        if len(shear_stress) > 1:
+            slope, intercept = np.polyfit(effective_stress, shear_stress, 1)
+            cohesion_values[test_name] = intercept  # Cohesion (c')
+        else:
+            print(f"Not enough data for regression in test: {test_name}")
+    
+# Print cohesion values
+print("Cohesion values (c') for each test:")
+print(cohesion_values)
+for test, cohesion in cohesion_values.items():
+    print(f"{test}: {cohesion:.2f} kPa")
