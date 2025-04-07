@@ -61,8 +61,8 @@ def Shearing_phase_CIU(triaxial_test, start_row, value_column, skiprow):
     # Calculate deviatoric strain and mean effective stress
     df['deviatoric_strain'] =  df["axial_strain"] #for underained conditions 
     df["mean_effective_stress_kPa"] = ((df["axial_effective_stress_kPa"] + 2 * df["radial_effective_stress_kPa"]) / 3)
-    #%% PLOT STRESS STRAIN AND ASK FOR INPUT USER
     
+    #%% PLOT STRESS STRAIN AND ASK FOR INPUT USER
     # Plot the stress-strain curve
     plt.figure(figsize=(8, 6))
     sns.scatterplot(x=df['deviatoric_strain'], y=df['deviatoric_stress_kPa'], color='b', alpha=0.7, label="Data Points")

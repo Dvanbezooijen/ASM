@@ -42,16 +42,18 @@ v_fs = {}
 lambdas = {}
 kappas = {}
 test_parameters = {}
+poission_ratios = {}
 
 #%% RUN DATA ANALYSIS DRAINED TEST
 for i,test in enumerate(drained_tests):
-    G0_modulus,G2_modulus,q_f,p_f,parameters = Shearing_phase_CID(
+    G0_modulus,G2_modulus,q_f,p_f,parameters,poisson_ratio = Shearing_phase_CID(
         test, drained_start_row[i], drained_value_column[i], drained_skiprow[i])
     q_f_d[test] = float(q_f)
     p_f_d[test] = float(p_f)
     G0s[test] = float(G0_modulus)
     G2s[test] = float(G2_modulus)
     test_parameters[test] = parameters
+    poission_ratios[test] = poisson_ratio
     
     #Consolidation phase
     lambd,kappa = consolidation_phase(
@@ -88,9 +90,6 @@ def critical_slope(p_f_values,q_f_values):
     # Compute critical state friction angle (phi_cs) from M
     phi_cs = np.arcsin(3 * M / (6 + M)) * (180 / np.pi)  # Convert to degrees
     
-    # Print results
-    print(f'The critical state slope (M) is {M:.3f}')
-    print(f'The critical state friction angle (phi_cs) is {phi_cs:.3f} degrees')
     
     # Plotting
     plt.figure(figsize=(8, 5))
@@ -117,3 +116,10 @@ def critical_slope(p_f_values,q_f_values):
 #%% COMPUTE CRITICAL SLOPE
 critical_slope(p_f_values_drained,q_f_values_drained)
 critical_slope(p_f_values_undrained,q_f_values_undrained)
+
+#%% AVERAGE KAPPAS LAMBDAS STIFFNESSES
+avg_kappa = sum(kappas.values())/len(kappas)
+avg_lambda = sum(lambdas.values())/len(lambdas)
+avg_G0s = sum(G0s.values())/len(G0s)
+avg_G2s= sum(G2s.values())/len(G2s)
+avg_poisson_ratio = sum(poission_ratios.values())/len(poission_ratios)

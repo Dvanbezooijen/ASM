@@ -14,7 +14,6 @@ import numpy as np
 #use loader to load relevant data into pandas
 df_raw = load_cpt_data('CPT/CPT000000197792.xml')
 
-
 #%% COMPUTE BASIC DATA AND PLOTS
 
 #adjust raw dataset (sort by depth and cutoff)
@@ -118,13 +117,55 @@ Nk = 18.3
 #undrained shear strength
 df['Undrained shear strength (kPa)'] = (df['Cone Resistance (qc, kPa)'] - df['Effective_vertical_stress (kPa)']/
                                         Nk)
+#%% SOIL PROPERTIES
 
+# Given data
+depth = np.array([2.5, 10, 20])  # Depth in meters
+cone_resistance = np.array([0.2, 0.6, 1.15]) * 1000  # Convert MPa to KPa
+friction_ratio = np.array([0.04, 0.11, 0.20]) * 100  # Convert to %
 
+# Reference values
+gamma_sat_ref = 15  # kN/m³
+qc_ref = 1000  # KPa
+Rf_ref = 6.0  # %
+beta = 1.25  # Inclination factor
 
+# Constants
+gamma_w = 9.81  # kN/m³ (Unit weight of water)
+atmospheric_pressure = 1000 #KPa 
 
+# Compute gamma_sat
+gamma_sat = gamma_sat_ref - beta * (np.log10(qc_ref / cone_resistance) / np.log10(Rf_ref / friction_ratio))
 
+# Compute total vertical stress (sigma_v)
+sigma_v = np.cumsum(gamma_sat * np.diff(np.hstack(([0], depth))))
 
+# Compute pore pressure (u)
+u = gamma_w * depth
 
+# Compute effective vertical stress (sigma'_v)
+sigma_v_prime = sigma_v - u
+
+# Compute friction angle
+friction_angle = np.degrees(np.arctan(0.1 + 0.38 * np.log10(cone_resistance / sigma_v_prime)))
+
+# Compute modulus of elasticity
+E_s = 7 * cone_resistance
+
+# Compute undrained shear strength
+s_u = (cone_resistance - sigma_v) / 18.3
+
+# Compute relativy density
+q_c1 = cone_resistance*np.sqrt(atmospheric_pressure/sigma_v_prime)
+relative_density = np.sqrt((1/305)*(q_c1/atmospheric_pressure))
+
+# Display results
+print("\nDepth (m) | Cone Resistance (kPa) | Friction Ratio (%) | Total Stress (kPa) | Pore Pressure (kPa) | Effective Stress (kPa) | Friction Angle (°) | Modulus of Elasticity (kPa) | Undrained Shear Strength (kPa) | Relative Density")
+print("-" * 160)
+
+# Corrected for loop syntax with added columns
+for d, cr, fr, sv, u_, svp, phi, Es, su, rd in zip(depth, cone_resistance, friction_ratio, sigma_v, u, sigma_v_prime, friction_angle, E_s, s_u, relative_density):
+    print(f"{d:8.2f} | {cr:18.2f} | {fr:18.2f} | {sv:18.2f} | {u_:18.2f} | {svp:22.2f} | {phi:15.2f} | {Es:15.2f} | {su:18.2f} | {rd:18.2f}")
 
 
 

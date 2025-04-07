@@ -48,7 +48,7 @@ def load_cpt_data(file_path):
         # Attempt to convert columns to numeric types
         df = df.apply(pd.to_numeric, errors='coerce')
         
-        print(df.head())  # Display first few rows
+        #print(df.head())  # Display first few rows
     else:
         print("No CPT data found in the XML file.")
     return df
